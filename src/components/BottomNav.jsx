@@ -24,7 +24,7 @@ export default function BottomNav({ activeTab, onTabChange, onAdd }) {
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setSheetOpen(true)}
+                  onClick={() => { try { navigator.vibrate?.(10); } catch {} setSheetOpen(true); }}
                   className="flex flex-col items-center justify-center -mt-5 active:scale-95 transition-transform focus-visible:ring-2 focus-visible:ring-accent focus-visible:ring-offset-2 focus-visible:ring-offset-surface rounded-xl"
                   aria-label="Add expense"
                 >

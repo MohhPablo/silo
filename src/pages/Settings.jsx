@@ -108,7 +108,7 @@ export default function Settings() {
 
       if (Array.isArray(data.budgets)) {
         for (const bud of data.budgets) {
-          await store.setBudget(bud.month, bud.amount);
+          await store.setBudget(bud.month, bud.amount, bud.fixedCosts ?? 0);
         }
       }
 

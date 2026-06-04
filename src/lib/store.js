@@ -118,21 +118,21 @@ class Store {
 
   // --- Budgets ---
 
-  async setBudget(month, amount) {
-    if (this.fallbackUsed) return this._fallbackSet('budgets', month, { month, amount });
+  async setBudget(month, amount, fixedCosts = 0) {
+    if (this.fallbackUsed) return this._fallbackSet('budgets', month, { month, amount, fixedCosts });
 
     try {
       const tx = this.db.transaction('budgets', 'readwrite');
       const store = tx.objectStore('budgets');
       await new Promise((resolve, reject) => {
-        const req = store.put({ month, amount });
+        const req = store.put({ month, amount, fixedCosts });
         req.onsuccess = resolve;
         req.onerror = reject;
       });
       return await this._txComplete(tx);
     } catch {
       this._useFallback();
-      return this._fallbackSet('budgets', month, { month, amount });
+      return this._fallbackSet('budgets', month, { month, amount, fixedCosts });
     }
   }
 
@@ -147,7 +147,8 @@ class Store {
         req.onsuccess = () => resolve(req.result);
         req.onerror = () => reject(req.error);
       });
-      return result?.amount ?? null;
+      if (!result) return null;
+      return { amount: result.amount ?? 0, fixedCosts: result.fixedCosts ?? 0 };
     } catch {
       this._useFallback();
       return this._fallbackGetSingle('budgets', month);
@@ -212,7 +213,12 @@ class Store {
   _fallbackGetSingle(storeName, key) {
     try {
       const raw = localStorage.getItem(this._fallbackKey(storeName, key));
-      return raw ? JSON.parse(raw).amount ?? null : null;
+      if (!raw) return null;
+      const parsed = JSON.parse(raw);
+      if (storeName === 'budgets') {
+        return { amount: parsed.amount ?? 0, fixedCosts: parsed.fixedCosts ?? 0 };
+      }
+      return parsed.amount ?? null;
     } catch {
       return null;
     }

@@ -1,18 +1,4 @@
-const CATEGORY_COLORS = {
-  food: '#ff9f0a',
-  transport: '#5e5ce6',
-  shopping: '#ff375f',
-  bills: '#30d158',
-  other: '#8e8e93',
-};
-
-const CATEGORY_LABELS = {
-  food: 'Food',
-  transport: 'Transport',
-  shopping: 'Shopping',
-  bills: 'Bills',
-  other: 'Other',
-};
+import { getCategoryColor, getCategoryLabel } from '../lib/categories';
 
 export default function Stats({ expenses, budget, total, currentMonth }) {
   const byCategory = expenses.reduce((acc, e) => {
@@ -24,24 +10,32 @@ export default function Stats({ expenses, budget, total, currentMonth }) {
   const categories = Object.entries(byCategory).sort((a, b) => b[1] - a[1]);
   const hasData = total > 0;
 
-  const dailyAvg = (() => {
+  const budgetAmount = budget?.amount ?? 0;
+  const fixedCosts = budget?.fixedCosts ?? 0;
+
+  const daysInMonth = (() => {
     const [y, m] = currentMonth.split('-').map(Number);
-    const daysInMonth = new Date(y, m, 0).getDate();
+    return new Date(y, m, 0).getDate();
+  })();
+
+  const currentDay = (() => {
+    const [y, m] = currentMonth.split('-').map(Number);
     const now = new Date();
-    const currentDay =
-      now.getFullYear() === y && now.getMonth() === m - 1
-        ? now.getDate()
-        : daysInMonth;
-    return total / Math.min(currentDay, daysInMonth);
+    return now.getFullYear() === y && now.getMonth() === m - 1
+      ? now.getDate()
+      : daysInMonth;
   })();
 
-  const projectedTotal = (() => {
-    const [y, m] = currentMonth.split('-').map(Number);
-    const daysInMonth = new Date(y, m, 0).getDate();
-    return dailyAvg * daysInMonth;
-  })();
+  const dailyAvg = total / Math.min(currentDay, daysInMonth);
+  const projectedTotal = dailyAvg * daysInMonth;
+  const projectionPct = budgetAmount ? (projectedTotal / budgetAmount) * 100 : 0;
 
-  const projectionPct = budget ? (projectedTotal / budget) * 100 : 0;
+  const safeToSpend = budgetAmount - fixedCosts;
+  const remainingSafe = safeToSpend - total;
+  const daysRemaining = Math.max(daysInMonth - currentDay, 1);
+  const dailyBonus = remainingSafe > 0 && daysRemaining > 0
+    ? remainingSafe / daysRemaining
+    : 0;
 
   return (
     <div className="flex flex-col gap-5">
@@ -72,10 +66,10 @@ export default function Stats({ expenses, budget, total, currentMonth }) {
                     <div key={cat} className="flex items-center gap-2">
                       <div
                         className="w-2.5 h-2.5 rounded-full flex-shrink-0"
-                        style={{ backgroundColor: CATEGORY_COLORS[cat] }}
+                        style={{ backgroundColor: getCategoryColor(cat) }}
                       />
-                      <span className="text-xs text-text-secondary capitalize flex-1 truncate">
-                        {CATEGORY_LABELS[cat]}
+                      <span className="text-xs text-text-secondary flex-1 truncate">
+                        {getCategoryLabel(cat)}
                       </span>
                       <span className="text-xs font-medium tabular-nums">
                         {pct}%
@@ -89,35 +83,36 @@ export default function Stats({ expenses, budget, total, currentMonth }) {
 
           {/* Category Totals */}
           <div className="space-y-1.5">
-            {categories.map(([cat, amount]) => (
-              <div
-                key={cat}
-                className="bg-surface-elevated rounded-xl px-4 py-3 flex items-center gap-3"
-              >
+            {categories.map(([cat, amount]) => {
+              const color = getCategoryColor(cat);
+              return (
                 <div
-                  className="w-8 h-8 rounded-lg flex items-center justify-center"
-                  style={{
-                    backgroundColor: `${CATEGORY_COLORS[cat]}18`,
-                  }}
+                  key={cat}
+                  className="bg-surface-elevated rounded-xl px-4 py-3 flex items-center gap-3"
                 >
                   <div
-                    className="w-2.5 h-2.5 rounded-full"
-                    style={{ backgroundColor: CATEGORY_COLORS[cat] }}
-                  />
+                    className="w-8 h-8 rounded-lg flex items-center justify-center"
+                    style={{ backgroundColor: `${color}18` }}
+                  >
+                    <div
+                      className="w-2.5 h-2.5 rounded-full"
+                      style={{ backgroundColor: color }}
+                    />
+                  </div>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium">
+                      {getCategoryLabel(cat)}
+                    </p>
+                    <p className="text-xs text-text-tertiary">
+                      {((amount / total) * 100).toFixed(0)}% of spending
+                    </p>
+                  </div>
+                  <span className="text-sm font-semibold tabular-nums">
+                    ₦{amount.toFixed(2)}
+                  </span>
                 </div>
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium capitalize">
-                    {CATEGORY_LABELS[cat]}
-                  </p>
-                  <p className="text-xs text-text-tertiary">
-                    {((amount / total) * 100).toFixed(0)}% of spending
-                  </p>
-                </div>
-                <span className="text-sm font-semibold tabular-nums">
-                  ₦{amount.toFixed(2)}
-                </span>
-              </div>
-            ))}
+              );
+            })}
           </div>
 
           {/* Projection */}
@@ -142,7 +137,7 @@ export default function Stats({ expenses, budget, total, currentMonth }) {
                 </p>
               </div>
             </div>
-            {budget > 0 && (
+            {budgetAmount > 0 && (
               <>
                 <div className="w-full h-2 rounded-full bg-surface-card overflow-hidden">
                   <div
@@ -167,6 +162,38 @@ export default function Stats({ expenses, budget, total, currentMonth }) {
             )}
           </div>
 
+          {/* Safe to Spend Daily Bonus */}
+          {budgetAmount > 0 && fixedCosts > 0 && (
+            <div className="bg-surface-elevated rounded-2xl p-5">
+              <p className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-3">
+                Safe to Spend
+              </p>
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <p className="text-xs text-text-tertiary">After fixed costs</p>
+                  <p className="text-lg font-semibold tabular-nums">₦{safeToSpend.toFixed(0)}</p>
+                </div>
+                <div className="text-right">
+                  <p className="text-xs text-text-tertiary">Remaining</p>
+                  <p className={`text-lg font-semibold tabular-nums ${remainingSafe < 0 ? 'text-danger' : 'text-success'}`}>
+                    ₦{remainingSafe.toFixed(0)}
+                  </p>
+                </div>
+              </div>
+              <div className="mt-3 pt-3 border-t border-border-light">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-text-secondary">Daily allowance</span>
+                  <span className="text-sm font-semibold tabular-nums">₦{dailyBonus.toFixed(0)}/day</span>
+                </div>
+                <p className="text-xs text-text-tertiary mt-1">
+                  {remainingSafe >= 0
+                    ? `You can safely spend ₦${dailyBonus.toFixed(0)} per day for the rest of the month.`
+                    : `You've exceeded your safe-to-spend budget.`}
+                </p>
+              </div>
+            </div>
+          )}
+
           {/* Count + Highest */}
           <div className="grid grid-cols-2 gap-3">
             <div className="bg-surface-elevated rounded-2xl p-4">
@@ -181,9 +208,9 @@ export default function Stats({ expenses, budget, total, currentMonth }) {
               <p className="text-xs text-text-tertiary mb-1">
                 Highest category
               </p>
-              <p className="text-xl font-bold capitalize truncate">
+              <p className="text-xl font-bold truncate">
                 {categories.length > 0
-                  ? CATEGORY_LABELS[categories[0][0]]
+                  ? getCategoryLabel(categories[0][0])
                   : '—'}
               </p>
             </div>
@@ -206,7 +233,7 @@ function DonutChart({ categories, total }) {
     const arc = {
       dashArray: `${length} ${circumference - length}`,
       dashOffset: -offset,
-      color: CATEGORY_COLORS[cat],
+      color: getCategoryColor(cat),
       category: cat,
       amount,
     };
@@ -215,7 +242,7 @@ function DonutChart({ categories, total }) {
   });
 
   const summary = arcs
-    .map((a) => `${CATEGORY_LABELS[a.category]} ${((a.amount / total) * 100).toFixed(0)}%`)
+    .map((a) => `${getCategoryLabel(a.category)} ${((a.amount / total) * 100).toFixed(0)}%`)
     .join(', ');
 
   return (

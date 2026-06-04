@@ -1,24 +1,18 @@
 import { useState, useEffect, useRef } from 'react';
-import { X, Banknote, Tag, Calendar, CreditCard } from 'lucide-react';
+import { X, Banknote, Tag, Calendar, CreditCard, UtensilsCrossed, Car, ShoppingBag, HelpCircle } from 'lucide-react';
+import { CATEGORIES, getCategoryColor } from '../lib/categories';
+import { detectCategory } from '../lib/categorize';
 
-function CategoryIcon({ category, size = 18 }) {
+function CategoryIcon({ category, size = 16 }) {
   const icons = {
-    food: <Tag size={size} />,
-    transport: <CreditCard size={size} />,
-    shopping: <Tag size={size} />,
-    bills: <Banknote size={size} />,
-    other: <Calendar size={size} />,
+    food: <UtensilsCrossed size={size} />,
+    transport: <Car size={size} />,
+    shopping: <ShoppingBag size={size} />,
+    bills: <CreditCard size={size} />,
+    other: <HelpCircle size={size} />,
   };
   return icons[category] || icons.other;
 }
-
-const CATEGORIES = [
-  { id: 'food', label: 'Food', color: 'bg-[#ff9f0a]' },
-  { id: 'transport', label: 'Transport', color: 'bg-[#5e5ce6]' },
-  { id: 'shopping', label: 'Shopping', color: 'bg-[#ff375f]' },
-  { id: 'bills', label: 'Bills', color: 'bg-[#30d158]' },
-  { id: 'other', label: 'Other', color: 'bg-[#8e8e93]' },
-];
 
 export default function BottomSheet({ open, onClose, onSave }) {
   const [amount, setAmount] = useState('');
@@ -26,9 +20,12 @@ export default function BottomSheet({ open, onClose, onSave }) {
   const [note, setNote] = useState('');
   const [isVisible, setIsVisible] = useState(false);
   const [isClosing, setIsClosing] = useState(false);
+  const [autoCategory, setAutoCategory] = useState(null);
   const inputRef = useRef(null);
   const touchStartY = useRef(null);
   const sheetRef = useRef(null);
+  const lastManualCategory = useRef('food');
+  const categoryTimer = useRef(null);
 
   useEffect(() => {
     if (open) {
@@ -57,6 +54,10 @@ export default function BottomSheet({ open, onClose, onSave }) {
 
   const handleSave = () => {
     if (!amount || parseFloat(amount) <= 0) return;
+
+    // Haptic feedback on successful save
+    try { navigator.vibrate?.(10); } catch {}
+
     onSave({
       amount: parseFloat(amount).toFixed(2),
       category,
@@ -66,7 +67,32 @@ export default function BottomSheet({ open, onClose, onSave }) {
     setAmount('');
     setCategory('food');
     setNote('');
+    setAutoCategory(null);
+    lastManualCategory.current = 'food';
     handleClose();
+  };
+
+  const handleNoteChange = (e) => {
+    const val = e.target.value;
+    setNote(val);
+
+    if (categoryTimer.current) clearTimeout(categoryTimer.current);
+    categoryTimer.current = setTimeout(() => {
+      const detected = detectCategory(val);
+      if (detected && detected !== category) {
+        setCategory(detected);
+        setAutoCategory(detected);
+      } else if (!detected && autoCategory) {
+        setCategory(lastManualCategory.current);
+        setAutoCategory(null);
+      }
+    }, 300);
+  };
+
+  const handleCategoryChange = (catId) => {
+    setCategory(catId);
+    setAutoCategory(null);
+    lastManualCategory.current = catId;
   };
 
   const handleTouchStart = (e) => {
@@ -140,30 +166,37 @@ export default function BottomSheet({ open, onClose, onSave }) {
             Category
           </label>
           <div className="flex gap-2 mb-5 overflow-x-auto ios-scroll pb-2 -mx-1 px-1">
-            {CATEGORIES.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setCategory(cat.id)}
-                className={`flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-all active:scale-95 ${
-                  category === cat.id
-                    ? 'bg-accent-muted ring-1 ring-accent/30'
-                    : 'bg-surface-card'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-full ${cat.color} flex items-center justify-center`}
-                >
-                  <CategoryIcon category={cat.id} />
-                </div>
-                <span
-                  className={`text-xs font-medium ${
-                    category === cat.id ? 'text-accent' : 'text-text-secondary'
+            {CATEGORIES.map((cat) => {
+              const isActive = category === cat.id;
+              const wasAutoDetected = autoCategory === cat.id;
+              return (
+                <button
+                  key={cat.id}
+                  onClick={() => handleCategoryChange(cat.id)}
+                  className={`flex-shrink-0 flex flex-col items-center gap-1.5 px-4 py-2.5 rounded-xl transition-all active:scale-95 ${
+                    isActive
+                      ? wasAutoDetected
+                        ? 'bg-accent-muted ring-1 ring-accent/30 animate-fade-in'
+                        : 'bg-accent-muted ring-1 ring-accent/30'
+                      : 'bg-surface-card'
                   }`}
                 >
-                  {cat.label}
-                </span>
-              </button>
-            ))}
+                  <div
+                    className="w-8 h-8 rounded-full flex items-center justify-center text-white"
+                    style={{ backgroundColor: cat.color }}
+                  >
+                    <CategoryIcon category={cat.id} />
+                  </div>
+                  <span
+                    className={`text-xs font-medium ${
+                      isActive ? 'text-accent' : 'text-text-secondary'
+                    }`}
+                  >
+                    {cat.label}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           <label className="text-xs font-medium text-text-secondary mb-1.5 block">
@@ -175,10 +208,15 @@ export default function BottomSheet({ open, onClose, onSave }) {
               type="text"
               placeholder="What was this for?"
               value={note}
-              onChange={(e) => setNote(e.target.value)}
+              onChange={handleNoteChange}
               maxLength={60}
               className="flex-1 bg-transparent text-text-primary outline-none placeholder:text-text-tertiary text-sm"
             />
+            {autoCategory && (
+              <span className="text-xs text-accent font-medium flex-shrink-0 ml-2">
+                Auto: {CATEGORIES.find((c) => c.id === autoCategory)?.label}
+              </span>
+            )}
           </div>
 
           <button

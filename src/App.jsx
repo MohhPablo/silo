@@ -41,13 +41,18 @@ export default function App() {
       navigator.serviceWorker.register('/sw.js').catch(() => {});
     }
 
-    // Check passcode on app load
+    // Request notification permission for pace alerts
+    if ('Notification' in window && Notification.permission === 'default') {
+      setTimeout(() => {
+        Notification.requestPermission().catch(() => {});
+      }, 5000);
+    }
+
     const checkPasscode = async () => {
       const enabled = isPasscodeEnabled();
       if (enabled) {
         setIsAuthenticated(false);
       } else {
-        // Check if user should see passcode setup (first time)
         const hasSeenSetup = localStorage.getItem('silo_passcode_setup_seen');
         if (!hasSeenSetup) {
           setShowPasscodeSetup(true);
@@ -62,12 +67,12 @@ export default function App() {
     checkPasscode();
   }, [isPasscodeEnabled]);
 
+  const isSubPage = tab === 'expenses' || tab === 'settings';
+
   return (
     <div className="h-screen overflow-hidden flex flex-col bg-surface">
-      {/* Show loading page during initial app load or data fetch */}
       {appLoading && loading ? <LoadingPage /> : null}
 
-      {/* Show passcode setup on first launch */}
       {showPasscodeSetup && !loading ? (
         <PasscodeSetup
           onComplete={() => {
@@ -81,17 +86,22 @@ export default function App() {
         />
       ) : null}
 
-      {/* Show passcode auth if needed */}
       {!showPasscodeSetup && !appLoading && !isAuthenticated && isPasscodeEnabled() ? (
         <PasscodeAuth onSuccess={() => setIsAuthenticated(true)} />
       ) : null}
 
-      {/* Main app content */}
       {isAuthenticated && !showPasscodeSetup && (
         <>
           <InstallGuide />
-          <Header title={PAGE_TITLES[tab]} subtitle={PAGE_SUBTITLES[tab]} />
-          <main className="flex-1 ios-scroll px-4 pt-3 pb-24">
+          <Header
+            title={PAGE_TITLES[tab]}
+            subtitle={PAGE_SUBTITLES[tab]}
+            showBack={isSubPage}
+            onBack={() => setTab('dashboard')}
+            showSettings={tab === 'dashboard'}
+            onSettings={() => setTab('settings')}
+          />
+          <main className="flex-1 ios-scroll px-4 pt-3 pb-[calc(env(safe-area-inset-bottom,0px)+80px)]">
             {loading ? (
               <div className="flex items-center justify-center h-40">
                 <div className="w-5 h-5 border-2 border-text-tertiary border-t-accent rounded-full animate-spin" />
@@ -108,6 +118,7 @@ export default function App() {
                         currentMonth={currentMonth}
                         onSetMonth={setMonth}
                         onUpdateBudget={updateBudget}
+                        onViewAll={() => setTab('expenses')}
                       />
                     );
                   case 'expenses':
