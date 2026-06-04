@@ -1,9 +1,13 @@
 import { useState } from 'react';
-import { Trash2, Download, Upload } from 'lucide-react';
+import { Trash2, Download, Upload, Lock } from 'lucide-react';
 import store from '../lib/store';
+import { usePasscode } from '../hooks/usePasscode';
+import PasscodeSetup from '../components/PasscodeSetup';
 
 export default function Settings() {
   const [importMessage, setImportMessage] = useState(null);
+  const [showPasscodeSetup, setShowPasscodeSetup] = useState(false);
+  const { isEnabled, togglePasscode, clearPasscode } = usePasscode();
 
   const clearAllData = () => {
     if (window.confirm('Delete all expense data? This cannot be undone.')) {
@@ -117,9 +121,84 @@ export default function Settings() {
     e.target.value = '';
   };
 
+  const handleTogglePasscode = async () => {
+    if (isEnabled) {
+      // Disable passcode
+      if (window.confirm('Disable passcode protection?')) {
+        await clearPasscode();
+      }
+    } else {
+      // Enable passcode
+      setShowPasscodeSetup(true);
+    }
+  };
+
+  const handleChangePasscode = () => {
+    if (window.confirm('Set a new passcode?')) {
+      setShowPasscodeSetup(true);
+    }
+  };
+
   return (
-    <div className="flex flex-col gap-5">
-      <div className="bg-surface-elevated rounded-2xl overflow-hidden">
+    <>
+      {showPasscodeSetup && (
+        <PasscodeSetup
+          onComplete={() => {
+            setShowPasscodeSetup(false);
+            window.location.reload();
+          }}
+          onSkip={() => setShowPasscodeSetup(false)}
+        />
+      )}
+
+      <div className="flex flex-col gap-5">
+        {/* Security Section */}
+        <div className="bg-surface-elevated rounded-2xl overflow-hidden">
+          <div className="px-5 py-4 border-b border-border-light">
+            <p className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-0.5">
+              Security
+            </p>
+            <p className="text-sm font-medium">Passcode Protection</p>
+          </div>
+
+          <button
+            onClick={handleTogglePasscode}
+            className="w-full flex items-center gap-3 px-5 py-4 active:bg-surface-card/50 transition-colors border-b border-border-light"
+          >
+            <div className="w-9 h-9 rounded-full bg-accent-muted flex items-center justify-center">
+              <Lock size={16} className={isEnabled ? 'text-accent' : 'text-text-tertiary'} />
+            </div>
+            <div className="flex-1 text-left">
+              <p className="text-sm font-medium">{isEnabled ? 'Disable' : 'Enable'} Passcode</p>
+              <p className="text-xs text-text-tertiary">
+                {isEnabled ? 'Your app is protected' : 'Protect your data with a 4-digit code'}
+              </p>
+            </div>
+            <div
+              className={`w-10 h-6 rounded-full transition-colors ${
+                isEnabled ? 'bg-accent' : 'bg-surface-card'
+              }`}
+            />
+          </button>
+
+          {isEnabled && (
+            <button
+              onClick={handleChangePasscode}
+              className="w-full flex items-center gap-3 px-5 py-4 active:bg-surface-card/50 transition-colors"
+            >
+              <div className="w-9 h-9 rounded-full bg-accent-muted flex items-center justify-center">
+                <Lock size={16} className="text-accent opacity-50" />
+              </div>
+              <div className="flex-1 text-left">
+                <p className="text-sm font-medium">Change Passcode</p>
+                <p className="text-xs text-text-tertiary">Update your security code</p>
+              </div>
+            </button>
+          )}
+        </div>
+
+        {/* About Section */}
+        <div className="bg-surface-elevated rounded-2xl overflow-hidden">
         <div className="px-5 py-4 border-b border-border-light">
           <p className="text-xs font-medium text-text-secondary uppercase tracking-wider mb-0.5">
             About
@@ -192,5 +271,6 @@ export default function Settings() {
         Nothing leaves this phone.
       </p>
     </div>
+    </>
   );
 }
