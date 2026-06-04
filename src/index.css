@@ -1,0 +1,86 @@
+@import 'tailwindcss';
+
+@theme {
+  --color-surface: #0a0a0a;
+  --color-surface-elevated: #1c1c1e;
+  --color-surface-card: #2c2c2e;
+  --color-accent: #f5a623;
+  --color-accent-muted: rgba(245, 166, 35, 0.15);
+  --color-danger: #ff453a;
+  --color-danger-muted: rgba(255, 69, 58, 0.15);
+  --color-success: #30d158;
+  --color-success-muted: rgba(48, 209, 88, 0.15);
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #8e8e93;
+  --color-text-tertiary: #98989e;
+  --color-border: #38383a;
+  --color-border-light: #2c2c2e;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input,
+textarea {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+body {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  background-color: #0a0a0a;
+}
+
+.ios-scroll {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.ios-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+@keyframes slide-up {
+  from {
+    transform: translateY(100%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.animate-slide-up {
+  animation: slide-up 0.35s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.animate-fade-in {
+  animation: fade-in 0.2s ease-out;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-slide-up,
+  .animate-fade-in {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

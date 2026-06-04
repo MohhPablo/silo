@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SILO Design Checkup · 35/60</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #fff; line-height: 1.6; padding: 2rem; max-width: 800px; margin: 0 auto; }
+  h1 { font-size: 1.5rem; margin-bottom: 0.25rem; }
+  .date { color: #8e8e93; font-size: 0.875rem; margin-bottom: 2rem; }
+  .score { font-size: 4rem; font-weight: 800; line-height: 1; }
+  .score-label { font-size: 1rem; color: #8e8e93; margin-bottom: 2rem; }
+  .vital { display: flex; align-items: center; gap: 1rem; padding: 0.75rem 1rem; border-radius: 0.75rem; margin-bottom: 0.5rem; background: #1c1c1e; }
+  .vital-name { flex: 1; font-weight: 600; font-size: 0.9375rem; }
+  .vital-score { font-weight: 700; font-size: 1rem; min-width: 3rem; text-align: center; }
+  .dot { width: 0.75rem; height: 0.75rem; border-radius: 50%; flex-shrink: 0; }
+  .dot-healthy { background: #30d158; }
+  .dot-watch { background: #ff9f0a; }
+  .dot-critical { background: #ff453a; }
+  .status-healthy { color: #30d158; }
+  .status-watch { color: #ff9f0a; }
+  .status-critical { color: #ff453a; }
+  h2 { font-size: 1.125rem; margin: 2rem 0 0.75rem; padding-bottom: 0.5rem; border-bottom: 1px solid #2c2c2e; }
+  .issue { background: #1c1c1e; padding: 1rem 1.25rem; border-radius: 0.75rem; margin-bottom: 0.5rem; border-left: 3px solid #ff453a; }
+  .issue.watch { border-left-color: #ff9f0a; }
+  .issue h3 { font-size: 0.9375rem; margin-bottom: 0.25rem; }
+  .issue p { font-size: 0.8125rem; color: #8e8e93; }
+  .fix { margin-top: 0.5rem; font-size: 0.8125rem; color: #30d158; }
+  .prescription { background: #1c1c1e; padding: 1rem 1.25rem; border-radius: 0.75rem; margin-bottom: 0.5rem; }
+  .prescription .num { color: #f5a623; font-weight: 700; margin-right: 0.5rem; }
+</style>
+</head>
+<body>
+  <h1>SILO Design Checkup</h1>
+  <p class="date">June 4, 2026</p>
+  <div class="score">35<span style="font-size:2rem;color:#8e8e93">/60</span></div>
+  <p class="score-label">Needs accessibility work before shipping</p>
+
+  <h2>Vital Signs</h2>
+  <div class="vital">
+    <div class="dot dot-healthy"></div>
+    <span class="vital-name">Intentionality</span>
+    <span class="vital-score status-healthy">10/10</span>
+  </div>
+  <div class="vital">
+    <div class="dot dot-healthy"></div>
+    <span class="vital-name">Speed</span>
+    <span class="vital-score status-healthy">10/10</span>
+  </div>
+  <div class="vital">
+    <div class="dot dot-watch"></div>
+    <span class="vital-name">Readability</span>
+    <span class="vital-score status-watch">5/10</span>
+  </div>
+  <div class="vital">
+    <div class="dot dot-watch"></div>
+    <span class="vital-name">Usability</span>
+    <span class="vital-score status-watch">5/10</span>
+  </div>
+  <div class="vital">
+    <div class="dot dot-watch"></div>
+    <span class="vital-name">Responsiveness</span>
+    <span class="vital-score status-watch">5/10</span>
+  </div>
+  <div class="vital">
+    <div class="dot dot-critical"></div>
+    <span class="vital-name">Accessibility</span>
+    <span class="vital-score status-critical">0/10</span>
+  </div>
+
+  <h2>Critical Issues</h2>
+  <div class="issue">
+    <h3>1. No keyboard navigation path</h3>
+    <p>No visible focus indicators. Keyboard users can Tab but can't tell where they are.</p>
+    <p class="fix">→ Add focus-visible rings to all interactive elements</p>
+  </div>
+  <div class="issue">
+    <h3>2. Text contrast failures</h3>
+    <p>text-tertiary (#636366) on surface-elevated (#1c1c1e) is ~2.1:1 contrast — fails WCAG AA.</p>
+    <p class="fix">→ Lighten text-tertiary to at least #98989e (4.5:1)</p>
+  </div>
+  <div class="issue">
+    <h3>3. Donut chart invisible to screen readers</h3>
+    <p>SVG has no title, role, or aria-label. Screen reader gets nothing.</p>
+    <p class="fix">→ Add role="img" and a descriptive title element</p>
+  </div>
+  <div class="issue">
+    <h3>4. No motion respect</h3>
+    <p>All animations bypass prefers-reduced-motion. No reduced-motion alternative.</p>
+    <p class="fix">→ Add @media (prefers-reduced-motion: reduce)</p>
+  </div>
+  <div class="issue">
+    <h3>5. Icon accessibility</h3>
+    <p>Icon-only buttons (close, trash, arrows) lack aria-labels.</p>
+    <p class="fix">→ Add aria-label to every icon-only button</p>
+  </div>
+  <div class="issue">
+    <h3>6. Zoom disabled</h3>
+    <p>user-scalable=no and maximum-scale=1.0 block pinch-to-zoom.</p>
+    <p class="fix">→ Remove both restrictions</p>
+  </div>
+
+  <h2>Watch Items</h2>
+  <div class="issue watch">
+    <h3>Browser prompt() for budget</h3>
+    <p>Functional but breaks the dark design aesthetic. Replace with inline edit or bottom sheet.</p>
+  </div>
+  <div class="issue watch">
+    <h3>Delete has no undo</h3>
+    <p>A 3-second toast with "Undo" would be safer than immediate delete.</p>
+  </div>
+  <div class="issue watch">
+    <h3>Small text sizes</h3>
+    <p>text-[10px] and text-[11px] are below Apple HIG minimum of 11pt.</p>
+  </div>
+
+  <h2>Prescriptions (Ordered)</h2>
+  <div class="prescription"><span class="num">1.</span> Add focus-visible rings to all interactive elements</div>
+  <div class="prescription"><span class="num">2.</span> Lighten text-tertiary to meet WCAG AA (4.5:1)</div>
+  <div class="prescription"><span class="num">3.</span> Add aria-labels to all icon-only buttons</div>
+  <div class="prescription"><span class="num">4.</span> Add accessible name to donut chart SVG</div>
+  <div class="prescription"><span class="num">5.</span> Respect prefers-reduced-motion</div>
+  <div class="prescription"><span class="num">6.</span> Remove user-scalable=no from viewport meta</div>
+</body>
+</html>
